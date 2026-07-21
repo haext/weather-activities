@@ -1,8 +1,8 @@
 # Weather Activities
 
-[![GitHub Release][https://img.shields.io/github/v/release/haext/weather-activities?style=flat-square]][https://github.com/haext/weather-activities/releases/latest]
-[![GitHub Downloads][https://img.shields.io/github/downloads/haext/weather-activities/total?style=flat-square]][https://github.com/haext/weather-activities/releases]
-[![hacs][https://img.shields.io/badge/hacs-default-orange.svg?style=flat-square]][https://github.com/hacs/integration]
+[![GitHub Release](https://img.shields.io/github/v/release/haext/weather-activities?style=flat-square)](https://github.com/haext/weather-activities/releases/latest)
+[![GitHub Downloads](https://img.shields.io/github/downloads/haext/weather-activities/total?style=flat-square)](https://github.com/haext/weather-activities/releases)
+[![hacs](https://img.shields.io/badge/hacs-default-orange.svg?style=flat-square)](https://github.com/hacs/integration)
 
 weather-activities is a HomeAssistant integration to identify when the forecasted weather is appropriate for outdoor activities.
 Given a configured list of activities, and a weather entity, it will create a series of sensors to let you know when the weather is expected to be suitable for your activities.
@@ -10,7 +10,7 @@ This could be used, for example, to help plan when to wash a car, when the kids 
 
 # Installation
 
-[![Add to HACS via My Home Assistant][https://my.home-assistant.io/badges/hacs_repository.svg]][https://my.home-assistant.io/redirect/hacs_repository/?owner=haext&repository=weather-activities&category=integration]
+[![Add to HACS via My Home Assistant](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=haext&repository=weather-activities&category=integration)
 
 Alternatively you may manually add this repository to HACS:
 
