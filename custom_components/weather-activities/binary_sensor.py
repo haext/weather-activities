@@ -1,6 +1,7 @@
 """Binary sensors for weather-activities."""
 
 import logging
+import re
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -13,34 +14,64 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     DOMAIN,
     CONFID_NAME,
+    CONFID_FORECAST_DAYS,
     ICON_ON,
     ICON_OFF,
 )
+from .coordinator import WeatherActivitiesDataCoordinator
 
 LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
     """Set up the binary sensor platform."""
     LOGGER.debug("Setup new entry: %s", entry)
+    
+    forecast_days = entry.data.get(CONFID_FORECAST_DAYS)
+    LOGGER.debug("Creating per-day sensors for %d days", forecast_days)
+    
+    coordinator: WeatherActivitiesDataCoordinator = hass.data[DOMAIN][entry.entry_id].coordinator
+    
+    async_add_entities([WeatherActivitiesSensor(entry=entry, coordinator=coordinator, day=day) for day in range(0,forecast_days)])
 
-class WeatherActivitiesSensor(BinarySensorEntity):
+class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     """Implementation of binary sensor."""
 
-    def __init__(self, entry: ConfigEntry) -> None:
+    def __init__(self, entry: ConfigEntry, coordinator: WeatherActivitiesDataCoordinator, day: int) -> None:
         """Initialize the binary sensor."""
-        self._entry = entry
+        super().__init__(coordinator)
         
+        self._entry = entry
+        self._day = day
+        
+        name = self._entry.get(CONFID_NAME)
+        key = name.sub(r'[-\s]+', '_', name).lower() + "_day_" + str(self._day)
         self.entity_description = BinarySensorEntityDescription(
-            key=DOMAIN,
-            name=self._entry.get(CONFID_NAME) + " Per Day",
+            key=key,
+            name=name + " Day " + str(self._day),
             icon=ICON_OFF,
             translation_key=DOMAIN + " perday",
         )
 
         self._attr_on = None
-        self._attr_unique_id = f"{self._entry.entry_id}_{self._entry.domain}_perday"
+        self._attr_unique_id = f"{self._entry.entry_id}_{key}"
 
-        LOGGER.debug("Initialized binary sensor from entry data: %s", self._entry.data)
+        LOGGER.debug("Initialized binary sensor for day %d from entry data: %s", day, self._entry.data)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Get the device information."""
+        return DeviceInfo(
+            name=f"WeatherActivityPerDay{self.device.device_id}",
+            manufacturer="HAExt",
+            model="PerDay",
+            sw_version="1.0",
+            identifiers={
+                (
+                    DOMAIN,
+                    f"{self.device.device_id}",
+                )
+            },
+        )
 
     @property
     def is_on(self) -> bool:
