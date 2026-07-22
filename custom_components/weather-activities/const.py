@@ -3,6 +3,7 @@
 DOMAIN = "weather-activities"
 PLATFORMS = []
 
+CONFID_NAME = "name"
 CONFID_WEATHER_ENTITY = "weather_entity"
 CONFID_FORECAST_DAYS = "forecast_days"
 CONFID_TEMP_MIN = "temp_min"

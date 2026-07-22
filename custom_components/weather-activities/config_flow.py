@@ -13,6 +13,7 @@ from homeassistant.helpers.selector import selector
 
 from .const import (
     DOMAIN,
+    CONFID_NAME,
     CONFID_WEATHER_ENTITY,
     CONFID_FORECAST_DAYS,
     CONFID_TEMP_MIN,
@@ -41,6 +42,7 @@ async def create_schema(config_entry: config_entries.ConfigEntry | None, hass: H
 
     return vol.Schema(
         {
+            vol.Required(CONFID_NAME, default=CONFDF_NAME): str,
             vol.Required(CONFID_WEATHER_ENTITY, default=get_config_data(config_entry, CONFID_WEATHER_ENTITY, weather_entity)): selector(
                 {
                     "entity": {
@@ -52,8 +54,8 @@ async def create_schema(config_entry: config_entries.ConfigEntry | None, hass: H
                 vol.Coerce(int), 
                 vol.Range(min=1, max=21)
             ),
-            vol.Optional(CONFID_TEMP_MIN, default=get_config_data(config_entry, CONFID_TEMP_MIN, CONFDF_TEMP_MIN)): vol.Coerce(float),
-            vol.Optional(CONFID_TEMP_MAX, default=get_config_data(config_entry, CONFID_TEMP_MAX, CONFDF_TEMP_MAX)): vol.Coerce(float),
+            vol.Optional(CONFID_TEMP_MIN, default=get_config_data(config_entry, CONFID_TEMP_MIN, CONFDF_TEMP_MIN)): vol.Any(vol.Coerce(float), None),
+            vol.Optional(CONFID_TEMP_MAX, default=get_config_data(config_entry, CONFID_TEMP_MAX, CONFDF_TEMP_MAX)): vol.Any(vol.Coerce(float), None),
         },
     )
 
@@ -67,7 +69,7 @@ class WeatherActivitiesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         errors = {}
         if user_input is not None:
-            return self.async_create_entry(title=user_input[CONFDF_NAME], data=user_input)
+            return self.async_create_entry(title=user_input[CONFID_NAME], data=user_input)
         
         data_schema = await create_schema(config_entry=None, hass=self.hass)
         return self.async_show_form(step_id="user", data_schema=data_schema, errors=errors)
