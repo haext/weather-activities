@@ -7,15 +7,23 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
+from homeassistant.components.weather import (
+    ATTR_FORECAST_TEMP,
+    ATTR_FORECAST_TIME,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as hadt
 
 from .const import (
     DOMAIN,
     CONFID_NAME,
     CONFID_FORECAST_DAYS,
+    CONFID_TEMP_MIN,
+    CONFID_TEMP_MAX,
     ICON_ON,
     ICON_OFF,
 )
@@ -74,6 +82,36 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             },
         )
 
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Update binary sensor with latest data from coordinator."""
+        if not self.coordinator.data.valid:
+            self._attr_on = None
+        else:
+            forecasts = self.coordinator.data.forecasts
+            filtered_time = self.filter_forecasts(forecasts)
+            
+            temp_min = self._entry.data.get(CONFID_TEMP_MIN)
+            temp_max = self._entry.data.get(CONFID_TEMP_MAX)
+            filtered_temp = [
+                forecast
+                for forecast in filtered_time
+                if (((temp_max is None) or (forecast.get(ATTR_FORECAST_TEMP) < temp_max)) and ((temp_min is None) or (forecast.get(ATTR_FORECAST_TEMP) >= temp_min)))
+            ]
+            self._attr_on = len(filtered_temp) > 0
+        self.async_write_ha_state()
+
+    def filter_forecasts(self, forecasts: list) -> list:
+        """Filter forecasts down to those valid for this sensor."""
+        now = hadt.now()
+        time_start = hadt.start_of_local_day(now + dt.timedelta(hours=24 * self._day))
+        time_end = hadt.start_of_local_day(now + dt.timedelta(hours=24 * (self._day + 1)))
+        return [
+            forecast
+            for forecast in forecasts
+            if ((time_forecast := hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)) < time_end) and (time_forecast >= time_start))
+        ]
+    
     @property
     def is_on(self) -> bool:
         """Test if the entity is on."""
@@ -93,7 +131,3 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     def extra_state_attributes(self) -> dict:
         """Get state attributes."""
         return {}
-
-    async def async_update(self) -> None:
-        """Update the entity state."""
-        self._attr_on = False
