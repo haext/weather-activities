@@ -52,32 +52,33 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         self._entry = entry
         self._day = day
         
-        name = self._entry.data.get(CONFID_NAME)
-        key = re.sub(r'[-\s]+', '_', name).lower() + "_day_" + str(self._day)
+        self._name = self._entry.data.get(CONFID_NAME) + " Day " + str(self._day)
+        self._key = re.sub(r'[-\s]+', '_', self._name).lower()
+        
         self.entity_description = BinarySensorEntityDescription(
-            key=key,
-            name=name + " Day " + str(self._day),
+            key=self._key,
+            name=self._name,
             icon=ICON_OFF,
             translation_key=DOMAIN + " perday",
         )
 
         self._attr_on = None
-        self._attr_unique_id = f"{self._entry.entry_id}_{key}"
+        self._attr_unique_id = f"{self._entry.entry_id}_{self._key}"
 
-        LOGGER.debug("Initialized binary sensor for day %d from entry data: %s", day, self._entry.data)
+        LOGGER.debug("Initialized binary sensor %s entry data: %s", self._name, self._entry.data)
 
     @property
     def device_info(self) -> DeviceInfo:
         """Get the device information."""
         return DeviceInfo(
-            name=f"WeatherActivityPerDay{self.device.device_id}",
+            name=f"WeatherActivityPerDay {self._name}",
             manufacturer="HAExt",
             model="PerDay",
             sw_version="1.0",
             identifiers={
                 (
                     DOMAIN,
-                    f"{self.device.device_id}",
+                    f"{self._key}",
                 )
             },
         )
