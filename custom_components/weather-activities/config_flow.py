@@ -52,8 +52,8 @@ async def create_schema(config_entry: config_entries.ConfigEntry | None, hass: H
                 vol.Coerce(int), 
                 vol.Range(min=1, max=21)
             ),
-            vol.Optional(CONFID_TEMP_MIN, default=get_config_data(config_entry, CONFID_TEMP_MIN, CONFDF_TEMP_MIN)): vol.Coerce(float),
-            vol.Optional(CONFID_TEMP_MAX, default=get_config_data(config_entry, CONFID_TEMP_MAX, CONFDF_TEMP_MAX)): vol.Coerce(float),
+            vol.Optional(CONFID_TEMP_MIN, default=get_config_data(config_entry, CONFID_TEMP_MIN, CONFDF_TEMP_MIN)): vol.Any(vol.Coerce(float), None),
+            vol.Optional(CONFID_TEMP_MAX, default=get_config_data(config_entry, CONFID_TEMP_MAX, CONFDF_TEMP_MAX)): vol.Any(vol.Coerce(float), None),
         },
     )
 
