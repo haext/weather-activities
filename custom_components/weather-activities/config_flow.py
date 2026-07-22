@@ -50,26 +50,20 @@ class WeatherActivitiesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     MINOR_VERSION = 1
 
-    def __init__(self, config_entry: dict) -> None:
-        """Initialize the config flow."""
-        super().__init__()
-        self._config_entry = config_entry
-
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         errors = {}
         if user_input is not None:
             return self.async_create_entry(title=user_input[CONFDF_NAME], data=user_input)
         
-        schema = await create_schema(config_entry=self._config_entry, hass=self.hass)
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+        data_schema = await create_schema(config_entry=None, hass=self.hass)
+        return self.async_show_form(step_id="user", data_schema=data_schema, errors=errors)
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         errors = {}
-        if user_input is not None:
-            return self.async_update_reload_and_abort(
-                self._get_reconfigure_entry(),
-                data_updates=data,
-            )
+        entry = self._get_reconfigure_entry() 
         
-        schema = await create_schema(config_entry=self._config_entry, hass=self.hass)
-        return self.async_show_form(step_id="reconfigure", data_schema=schema, errors=errors)
+        if user_input is not None:
+            return self.async_update_reload_and_abort(entry, data_updates={**entry.data, **user_input})
+        
+        data_schema = await create_schema(config_entry=entry, hass=self.hass)
+        return self.async_show_form(step_id="reconfigure", data_schema=data_schema, errors=errors)
