@@ -1,7 +1,15 @@
 from __future__ import annotations
 
+import logging
+from typing import Any
 import voluptuous as vol
+
 from homeassistant import config_entries
+from homeassistant.components.weather import (
+    DOMAIN as DOMAIN_WEATHER,
+)
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.selector import selector
 
 from .const import (
     DOMAIN,
@@ -11,17 +19,19 @@ from .const import (
     CONFDF_FORECAST_DAYS,
 )
 
+LOGGER = logging.getLogger(__name__)
+
 def get_config_data(entry: config_entries.ConfigEntry | None, key: str, default: Any = None) -> any:
     """Get data from a config entry, return the default if there is no entry."""
     if entry is None:
         return default
     return entry.data.get(key, default)
 
-async def create_schema(config_entry: config_entries.ConfigEntry | None, hass: HomeAssistant,) -> vol.Schema:
+async def create_schema(config_entry: config_entries.ConfigEntry | None, hass: HomeAssistant) -> vol.Schema:
     """Create the config flow schema."""
     
     # Get a list of the weather entities, and find a suggested entity if there's only one
-    weather_entities = list(hass.states.async_entity_ids(WEATHER_DOMAIN))
+    weather_entities = list(hass.states.async_entity_ids(DOMAIN_WEATHER))
     LOGGER.debug("Weather entities: %s", weather_entities)
     weather_entity = weather_entities[0] if weather_entities else None
 
