@@ -1,0 +1,27 @@
+{
+  "title": "Weather Activities",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Weather Activity Settings",
+        "description": "Please configure the weather activity",
+        "data": {
+          "weather_entity": "Weather entity",
+          "forecast_days": "Days to look ahead",
+          "temp_min": "Minimum allowed temperature",
+          "temp_max": "Maximum allowed temperature"
+        }
+      },
+      "reconfigure": {
+        "title": "Weather Activity Settings",
+        "description": "Please configure the weather activity",
+        "data": {
+          "weather_entity": "Weather entity",
+          "forecast_days": "Days to look ahead",
+          "temp_min": "Minimum allowed temperature",
+          "temp_max": "Maximum allowed temperature"
+        }
+      }
+    }
+  }
+}
