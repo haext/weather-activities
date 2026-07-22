@@ -45,7 +45,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         self._day = day
         
         name = self._entry.data.get(CONFID_NAME)
-        key = name.sub(r'[-\s]+', '_', name).lower() + "_day_" + str(self._day)
+        key = re.sub(r'[-\s]+', '_', name).lower() + "_day_" + str(self._day)
         self.entity_description = BinarySensorEntityDescription(
             key=key,
             name=name + " Day " + str(self._day),
