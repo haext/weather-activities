@@ -40,17 +40,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     LOGGER.debug("Creating per-day sensors for %d days", forecast_days)
     
     coordinator: WeatherActivitiesDataCoordinator = hass.data[DOMAIN][entry.entry_id].coordinator
+    activity_name: str = self._entry.data.get(CONFID_NAME)
+    device_info: DeviceInfo = DeviceInfo(
+          name=f"WeatherActivity {activity_name}",
+          manufacturer="HAExt",
+          model="WeatherActivity",
+          sw_version="1.0",
+          identifiers={
+              (
+                  DOMAIN,
+                  f"{activity_name}",
+              )
+          },
+      )
     
-    async_add_entities([WeatherActivitiesSensor(entry=entry, coordinator=coordinator, day=day) for day in range(0,forecast_days+1)])
+    async_add_entities([WeatherActivitiesSensor(entry=entry, coordinator=coordinator, device_info=device_info, day=day) for day in range(0,forecast_days+1)])
 
 class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     """Implementation of binary sensor."""
 
-    def __init__(self, entry: ConfigEntry, coordinator: WeatherActivitiesDataCoordinator, day: int) -> None:
+    def __init__(self, entry: ConfigEntry, coordinator: WeatherActivitiesDataCoordinator, device_info: DeviceInfo, day: int) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator)
         
         self._entry = entry
+        self._device_info = device_info
         self._day = day
         
         self._activity_name = self._entry.data.get(CONFID_NAME)
@@ -72,18 +86,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Get the device information."""
-        return DeviceInfo(
-            name=f"WeatherActivity {self._activity_name}",
-            manufacturer="HAExt",
-            model="WeatherActivity",
-            sw_version="1.0",
-            identifiers={
-                (
-                    DOMAIN,
-                    f"{self._activity_name}",
-                )
-            },
-        )
+        return self._device_info
 
     def _load_from_coordinator(self) -> None:
         if not self.coordinator.data.valid:
