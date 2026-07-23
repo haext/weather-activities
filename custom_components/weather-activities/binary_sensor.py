@@ -26,6 +26,11 @@ from .const import (
     CONFID_FORECAST_DAYS,
     CONFID_TEMP_MIN,
     CONFID_TEMP_MAX,
+    CONFID_TIME_START,
+    CONFID_TIME_END,
+    CONFID_ISDAY,
+    CONFID_DOW,
+    CONFID_HRS_MIN,
     ICON_ON,
     ICON_OFF,
 )
@@ -152,7 +157,31 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             if (((temp_max is None) or (forecast.get(ATTR_FORECAST_TEMP) < temp_max)) and ((temp_min is None) or (forecast.get(ATTR_FORECAST_TEMP) >= temp_min)))
         ]
         LOGGER.debug("Found forecasts in temp range: %s", filtered_temp)
-        return filtered_temp
+        
+        time_start = hadt.parse_time(self._entry.data.get(CONFID_TIME_START))
+        time_end = hadt.parse_time(self._entry.data.get(CONFID_TIME_END))
+        LOGGER.debug("Filtering for times between %s and %s", time_start, time_end)
+        filtered_time = [
+            forecast
+            for forecast in filtered_temp
+            if (((time_start is None) or (hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)).time() >= time_start)) and ((time_end is None) or (hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)).time() < time_end)))
+        ]
+        LOGGER.debug("Found forecasts in time range: %s", filtered_time)
+        
+        dow = None # self._entry.data.get(CONFID_DOW)
+        isday = self._entry.data.get(CONFID_ISDAY)
+        LOGGER.debug("Filtering for dow %s and isday %s", dow, isday)
+        filtered_dd = [
+            forecast
+            for forecast in filtered_temp
+            if (isday is None) or (isday == forecast.isday)
+        ]
+        LOGGER.debug("Found forecasts with isday: %s", filtered_dd)
+        
+        hrs_min = self._entry.data.get(CONFID_HRS_MIN)
+        if (hrs_min is not None) and len(filtered_dd) < hrs_min:
+            return []
+        return filtered_dd
 
 class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
     """Implementation of binary sensor for per-day."""
