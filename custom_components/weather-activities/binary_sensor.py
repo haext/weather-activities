@@ -170,12 +170,13 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         LOGGER.debug("Found forecasts in time range: %s", filtered_time)
         
         dow = None # self._entry.data.get(CONFID_DOW)
-        isday = self._entry.data.get(CONFID_ISDAY) if self._entry.data.get(CONFID_ISDAY_VALID) else None
-        LOGGER.debug("Filtering for dow %s and isday %s", dow, isday)
+        isday_valid = self._entry.data.get(CONFID_ISDAY_VALID, False)
+        isday = self._entry.data.get(CONFID_ISDAY)
+        LOGGER.debug("Filtering for dow %s, isday_valid %s, and isday %s", dow, isday_valid, isday)
         filtered_dd = [
             forecast
-            for forecast in filtered_temp
-            if (isday is None) or (isday == forecast.isday)
+            for forecast in filtered_time
+            if (not isday_valid) or (isday == forecast.is_daytime)
         ]
         LOGGER.debug("Found forecasts with isday: %s", filtered_dd)
         
