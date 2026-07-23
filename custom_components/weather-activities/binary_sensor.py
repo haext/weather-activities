@@ -36,6 +36,8 @@ from .const import (
     ICON_OFF,
     ATTR_HRS_COUNT,
     ATTR_DAYS_COUNT,
+    ATTR_TEMP_MIN,
+    ATTR_TEMP_MAX,
 )
 from .coordinator import WeatherActivitiesDataCoordinator
 
@@ -97,6 +99,11 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         return self._activity_name
     
     @property
+    def should_poll(self):
+        """Return False for push-based integration."""
+        return False
+    
+    @property
     def device_info(self) -> DeviceInfo:
         """Get the device information."""
         return self._device_info
@@ -114,10 +121,13 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     def _load_from_coordinator(self) -> None:
         if not self.coordinator.data.valid:
             LOGGER.debug("No valid coordinator data")
-            self._attr_on = None
+            self._set_unavailable()
         else:
             forecasts = self.coordinator.data.forecasts
             self._load_from_forecasts(forecasts)
+    
+    def _set_unavailable(self) -> None:
+        self._attr_on = None
     
     def _load_from_forecasts(self, forecasts: list) -> None:
         LOGGER.debug("Not properly implemented")
@@ -195,6 +205,8 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
         self._day = day
         super().__init__(hass=hass, entry=entry, coordinator=coordinator, device_info=device_info)
         self._attr_hrs_count = None
+        self._attr_temp_min = None
+        self._attr_temp_max = None
 
     def _generate_name(self) -> str:
         """Generate a name for this entity"""
@@ -209,18 +221,25 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
     def name(self) -> str:
         """Get the entity name."""
         return (hadt.now() + dt.timedelta(hours=24 * self._day)).strftime("%Y-%m-%d %A") + " (+" + str(self._day) + "d)"
-
+    
+    def _set_unavailable(self) -> None:
+        self._attr_on = None
+        self._attr_hrs_count = None
+        self._attr_temp_min = None
+        self._attr_temp_max = None
+    
     def _load_from_forecasts(self, forecasts: list) -> None:
         filtered_time = self.filter_forecasts_by_time(forecasts)
         LOGGER.debug("Found forecasts in time range: %s", filtered_time)
         if (len(filtered_time) < 24) and (self._day > 0):
             LOGGER.debug("Found too few forecasts")
-            self._attr_on = None
-            self._attr_hrs_count = None
+            self._set_unavailable()
         else:
             filtered_activity = self.filter_forecasts_by_activity(filtered_time)
             self._attr_on = len(filtered_activity) > 0
             self._attr_hrs_count = len(filtered_activity)
+            self._attr_temp_min = min(filtered_activity, key=lambda f: f.get(ATTR_FORECAST_TEMP)).get(ATTR_FORECAST_TEMP)
+            self._attr_temp_max = max(filtered_activity, key=lambda f: f.get(ATTR_FORECAST_TEMP)).get(ATTR_FORECAST_TEMP)
     
     def filter_forecasts_by_time(self, forecasts: list) -> list:
         """Filter forecasts down to those valid for this sensor."""
@@ -237,7 +256,9 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
     def extra_state_attributes(self) -> dict:
         """Get state attributes."""
         return {
-            ATTR_HRS_COUNT: self._attr_hrs_count
+            ATTR_HRS_COUNT: self._attr_hrs_count,
+            ATTR_TEMP_MIN: self._attr_temp_min,
+            ATTR_TEMP_MAX: self._attr_temp_max,
         }
 
 class WeatherActivitiesActivitySensor(WeatherActivitiesSensor):
@@ -256,7 +277,11 @@ class WeatherActivitiesActivitySensor(WeatherActivitiesSensor):
     def translation_key(self) -> str:
         """Get the translation key."""
         return DOMAIN + " activity",
-
+    
+    def _set_unavailable(self) -> None:
+        self._attr_on = None
+        self._attr_days_count = None
+    
     def _load_from_forecasts(self, forecasts: list) -> None:
         LOGGER.debug("Found forecasts: %s", forecasts)
         filtered_activity = self.filter_forecasts_by_activity(forecasts)
@@ -267,5 +292,5 @@ class WeatherActivitiesActivitySensor(WeatherActivitiesSensor):
     def extra_state_attributes(self) -> dict:
         """Get state attributes."""
         return {
-            ATTR_DAYS_COUNT: self._attr_days_count
+            ATTR_DAYS_COUNT: self._attr_days_count,
         }
