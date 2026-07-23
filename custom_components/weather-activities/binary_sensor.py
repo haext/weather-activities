@@ -74,7 +74,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         self._name = self._activity_name + " Day " + str(self._day)
         self._key = re.sub(r'[-\s]+', '_', self._name).lower()
         
-        self.entity_id = generate_entity_id("binary_sensor.{}", DOMAIN + "_" + self._key, hass)
+        self.entity_id = generate_entity_id("binary_sensor.{}", DOMAIN + "_" + self._key, hass=hass)
         self.entity_description = BinarySensorEntityDescription(
             key=self._key,
             icon=ICON_OFF,
