@@ -89,10 +89,10 @@ class WeatherActivitiesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         errors = {}
         if user_input is not None:
-            if user_input[CONFID_TIME_START] is not None and not time_regex.search(user_input[CONFID_TIME_START]):
-                errors[CONFID_TIME_START] = time_msg
-            if user_input[CONFID_TIME_END] is not None and not time_regex.search(user_input[CONFID_TIME_END]):
-                errors[CONFID_TIME_END] = time_msg
+            if user_input[CONFID_TIME_START] is not None and not self.time_regex.search(user_input[CONFID_TIME_START]):
+                errors[CONFID_TIME_START] = self.time_msg
+            if user_input[CONFID_TIME_END] is not None and not self.time_regex.search(user_input[CONFID_TIME_END]):
+                errors[CONFID_TIME_END] = self.time_msg
             
             if not errors:
                 return self.async_create_entry(title=user_input[CONFID_NAME], data=user_input)
@@ -107,10 +107,10 @@ class WeatherActivitiesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             data_updates = {**entry.data, **user_input}
             
-            if data_updates[CONFID_TIME_START] is not None and not time_regex.search(data_updates[CONFID_TIME_START]):
-                errors[CONFID_TIME_START] = time_msg
-            if data_updates[CONFID_TIME_END] is not None and not time_regex.search(data_updates[CONFID_TIME_END]):
-                errors[CONFID_TIME_END] = time_msg
+            if data_updates[CONFID_TIME_START] is not None and not self.time_regex.search(data_updates[CONFID_TIME_START]):
+                errors[CONFID_TIME_START] = self.time_msg
+            if data_updates[CONFID_TIME_END] is not None and not self.time_regex.search(data_updates[CONFID_TIME_END]):
+                errors[CONFID_TIME_END] = self.time_msg
             
             if not errors:
                 return self.async_update_reload_and_abort(entry, data_updates=data_updates)
