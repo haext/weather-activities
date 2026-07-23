@@ -228,9 +228,9 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         time_end = hadt.parse_time(self._entry.data.get(CONFID_TIME_END)) if check_time_end else None
         time: dt.time = hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)).time()
         if (time_start is not None) and (time < time_start):
-            explanations.append(f"time {time}<{time_start}")
+            explanations.append("time " + time.strftime("%H:%M") + "<" + time_start.strftime("%H:%M"))
         if (time_end is not None) and (time >= time_end):
-            explanations.append(f"time {time}>={time_end}")
+            explanations.append("time " + time.strftime("%H:%M") + ">=" + time_end.strftime("%H:%M"))
         
         dow = None # self._entry.data.get(CONFID_DOW)
         isday_valid = self._entry.data.get(CONFID_ISDAY_VALID, False)
