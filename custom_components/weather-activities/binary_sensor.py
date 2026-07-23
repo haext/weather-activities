@@ -252,7 +252,7 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
         time_end = hadt.parse_time(self._entry.data.get(CONFID_TIME_END))
         if time_start is not None:
             day_start_time = time_start
-        elif time_end if not None:
+        elif time_end is not None:
             day_start_time = time_end
         else
             day_start_time = hadt.parse_time("00:00:00")
