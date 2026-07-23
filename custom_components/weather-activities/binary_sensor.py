@@ -118,7 +118,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         return [
             forecast
             for forecast in forecasts
-            if ((time_forecast := hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)) < time_end) and (time_forecast >= time_start))
+            if (((time_forecast := hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME))) < time_end) and (time_forecast >= time_start))
         ]
     
     @property
