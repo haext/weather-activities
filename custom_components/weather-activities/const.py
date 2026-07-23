@@ -38,6 +38,8 @@ ICON_OFF = "mdi:cloud-alert"
 
 # Attributes
 ATTR_HRS_COUNT = "hrs_count"
+ATTR_HRS_RANGES = "hrs_ranges"
+ATTR_HRS_LIST = "hrs_list"
 ATTR_DAYS_COUNT = "days_count"
 ATTR_TEMP_MIN = "temp_min"
 ATTR_TEMP_MAX = "temp_max"
