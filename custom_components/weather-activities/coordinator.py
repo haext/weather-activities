@@ -14,6 +14,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .const import (
     DOMAIN,
+    CONFID_NAME,
     CONFID_WEATHER_ENTITY,
 )
 
@@ -36,7 +37,7 @@ class WeatherActivitiesDataCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             LOGGER,
-            name=f"{DOMAIN} ({self._entry.unique_id})",
+            name=f"{DOMAIN} ({self._entry.data.get(CONFID_NAME)})",
             update_method=self.get_coordinator_data,
         )
         
