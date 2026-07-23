@@ -9,7 +9,13 @@
           "weather_entity": "Weather entity",
           "forecast_days": "Days to look ahead",
           "temp_min": "Minimum allowed temperature",
-          "temp_max": "Maximum allowed temperature"
+          "temp_max": "Maximum allowed temperature",
+          "time_start": "Start of allowed time range (HH:MM)",
+          "time_end": "End of allowed time range (HH:MM)",
+          "isday_valid": "Does the activity care about day/night?",
+          "isday": "Does the activity require day (or night)?",
+          "dow": "What days of the week is the activity allowed on?",
+          "hrs_min": "Minimum hours per day"
         }
       },
       "reconfigure": {
@@ -19,7 +25,13 @@
           "weather_entity": "Weather entity",
           "forecast_days": "Days to look ahead",
           "temp_min": "Minimum allowed temperature",
-          "temp_max": "Maximum allowed temperature"
+          "temp_max": "Maximum allowed temperature",
+          "time_start": "Start of allowed time range (HH:MM)",
+          "time_end": "End of allowed time range (HH:MM)",
+          "isday_valid": "Does the activity care about day/night?",
+          "isday": "Does the activity require day (or night)?", 
+          "dow": "What days of the week is the activity allowed on?",
+          "hrs_min": "Minimum hours per day"
         }
       }
     }

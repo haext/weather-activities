@@ -26,8 +26,18 @@ from .const import (
     CONFID_FORECAST_DAYS,
     CONFID_TEMP_MIN,
     CONFID_TEMP_MAX,
+    CONFID_TIME_START,
+    CONFID_TIME_END,
+    CONFID_ISDAY_VALID,
+    CONFID_ISDAY,
+    CONFID_DOW,
+    CONFID_HRS_MIN,
     ICON_ON,
     ICON_OFF,
+    ATTR_HRS_COUNT,
+    ATTR_DAYS_COUNT,
+    ATTR_TEMP_MIN,
+    ATTR_TEMP_MAX,
 )
 from .coordinator import WeatherActivitiesDataCoordinator
 
@@ -89,6 +99,11 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         return self._activity_name
     
     @property
+    def should_poll(self):
+        """Return False for push-based integration."""
+        return False
+    
+    @property
     def device_info(self) -> DeviceInfo:
         """Get the device information."""
         return self._device_info
@@ -106,10 +121,14 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     def _load_from_coordinator(self) -> None:
         if not self.coordinator.data.valid:
             LOGGER.debug("No valid coordinator data")
-            self._attr_on = None
+            self._set_unavailable()
         else:
             forecasts = self.coordinator.data.forecasts
             self._load_from_forecasts(forecasts)
+    
+    def _set_unavailable(self) -> None:
+        self._attr_on = None
+        self._attr_extra_state_attributes = {}
     
     def _load_from_forecasts(self, forecasts: list) -> None:
         LOGGER.debug("Not properly implemented")
@@ -136,11 +155,6 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         """Get the icon, based on the current state."""
         return ICON_ON if self.is_on else ICON_OFF
     
-    @property
-    def extra_state_attributes(self) -> dict:
-        """Get state attributes."""
-        return {}
-    
     def filter_forecasts_by_activity(self, forecasts: list) -> list:
         """Filter forecasts down to those valid for this activity."""
         temp_min = self._entry.data.get(CONFID_TEMP_MIN)
@@ -152,7 +166,32 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             if (((temp_max is None) or (forecast.get(ATTR_FORECAST_TEMP) < temp_max)) and ((temp_min is None) or (forecast.get(ATTR_FORECAST_TEMP) >= temp_min)))
         ]
         LOGGER.debug("Found forecasts in temp range: %s", filtered_temp)
-        return filtered_temp
+        
+        time_start = hadt.parse_time(self._entry.data.get(CONFID_TIME_START))
+        time_end = hadt.parse_time(self._entry.data.get(CONFID_TIME_END))
+        LOGGER.debug("Filtering for times between %s and %s", time_start, time_end)
+        filtered_time = [
+            forecast
+            for forecast in filtered_temp
+            if (((time_start is None) or (hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)).time() >= time_start)) and ((time_end is None) or (hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)).time() < time_end)))
+        ]
+        LOGGER.debug("Found forecasts in time range: %s", filtered_time)
+        
+        dow = None # self._entry.data.get(CONFID_DOW)
+        isday_valid = self._entry.data.get(CONFID_ISDAY_VALID, False)
+        isday = self._entry.data.get(CONFID_ISDAY, False)
+        LOGGER.debug("Filtering for dow %s, isday_valid %s, and isday %s", dow, isday_valid, isday)
+        filtered_dd = [
+            forecast
+            for forecast in filtered_time
+            if (not isday_valid) or (isday == forecast.get("is_daytime", None))
+        ]
+        LOGGER.debug("Found forecasts with isday: %s", filtered_dd)
+        
+        hrs_min = self._entry.data.get(CONFID_HRS_MIN)
+        if (hrs_min is not None) and len(filtered_dd) < hrs_min:
+            return []
+        return filtered_dd
 
 class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
     """Implementation of binary sensor for per-day."""
@@ -175,16 +214,21 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
     def name(self) -> str:
         """Get the entity name."""
         return (hadt.now() + dt.timedelta(hours=24 * self._day)).strftime("%Y-%m-%d %A") + " (+" + str(self._day) + "d)"
-
+    
     def _load_from_forecasts(self, forecasts: list) -> None:
         filtered_time = self.filter_forecasts_by_time(forecasts)
         LOGGER.debug("Found forecasts in time range: %s", filtered_time)
         if (len(filtered_time) < 24) and (self._day > 0):
             LOGGER.debug("Found too few forecasts")
-            self._attr_on = None
+            self._set_unavailable()
         else:
             filtered_activity = self.filter_forecasts_by_activity(filtered_time)
             self._attr_on = len(filtered_activity) > 0
+            self._attr_extra_state_attributes = {
+                ATTR_HRS_COUNT: len(filtered_activity),
+                ATTR_TEMP_MIN: min(filtered_activity, key=lambda f: f.get(ATTR_FORECAST_TEMP)).get(ATTR_FORECAST_TEMP) if self._attr_on else None,
+                ATTR_TEMP_MAX: max(filtered_activity, key=lambda f: f.get(ATTR_FORECAST_TEMP)).get(ATTR_FORECAST_TEMP) if self._attr_on else None,
+            }
     
     def filter_forecasts_by_time(self, forecasts: list) -> list:
         """Filter forecasts down to those valid for this sensor."""
@@ -212,8 +256,11 @@ class WeatherActivitiesActivitySensor(WeatherActivitiesSensor):
     def translation_key(self) -> str:
         """Get the translation key."""
         return DOMAIN + " activity",
-
+    
     def _load_from_forecasts(self, forecasts: list) -> None:
         LOGGER.debug("Found forecasts: %s", forecasts)
         filtered_activity = self.filter_forecasts_by_activity(forecasts)
         self._attr_on = len(filtered_activity) > 0
+        self._attr_extra_state_attributes = {
+            ATTR_DAYS_COUNT: len(filtered_activity),
+        }
