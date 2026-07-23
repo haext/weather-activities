@@ -211,7 +211,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             return []
         return filtered_dd
     
-    def explain_mismatch(self, , check_time_start: bool = False, check_time_end: bool = False) -> str:
+    def explain_mismatch(self, forecast, check_time_start: bool = False, check_time_end: bool = True) -> str:
         if forecast is None:
             return "no future forecast found"
         
