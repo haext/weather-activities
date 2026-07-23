@@ -65,16 +65,19 @@ class WeatherActivitiesDataCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Weather entity {entity_id} not found")
 
         entity_forecasts = await self.hass.services.async_call(
-            WEATHER_DOMAIN,
-            SERVICE_GET_FORECASTS,
-            {
-                "entity_id": entity_id,
-                "type": "hourly",
+            domain=WEATHER_DOMAIN,
+            service=SERVICE_GET_FORECASTS,
+            service_data={
+                "type": "hourly"
             },
             blocking=True,
+            target={
+                "entity_id": entity_id
+            },
             return_response=True,
         )
-        forecasts = entity_forecasts.get(entity_id, {}).get("forecast")
+        LOGGER.debug("Weather entity %s forecasts: %s", entity_id, entity_forecasts)
+        forecasts = entity_forecasts.get(entity_id, {}).get("forecast", [])
 
         if forecasts is None:
             raise UpdateFailed(f"Failed to get forecasts from {entity_id}")
