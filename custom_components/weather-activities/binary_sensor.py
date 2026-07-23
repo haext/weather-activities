@@ -55,12 +55,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
           },
       )
     
-    async_add_entities([WeatherActivitiesSensor(entry=entry, coordinator=coordinator, device_info=device_info, day=day) for day in range(0,forecast_days+1)])
+    async_add_entities([WeatherActivitiesSensor(hass=hass, entry=entry, coordinator=coordinator, device_info=device_info, day=day) for day in range(0,forecast_days+1)])
 
 class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     """Implementation of binary sensor."""
 
-    def __init__(self, entry: ConfigEntry, coordinator: WeatherActivitiesDataCoordinator, device_info: DeviceInfo, day: int) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, coordinator: WeatherActivitiesDataCoordinator, device_info: DeviceInfo, day: int) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator)
         
@@ -74,7 +74,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         self._name = self._activity_name + " Day " + str(self._day)
         self._key = re.sub(r'[-\s]+', '_', self._name).lower()
         
-        self.entity_id = generate_entity_id("binary_sensor.{}", DOMAIN + "_" + self._key)
+        self.entity_id = generate_entity_id("binary_sensor.{}", DOMAIN + "_" + self._key, hass)
         self.entity_description = BinarySensorEntityDescription(
             key=self._key,
             icon=ICON_OFF,
