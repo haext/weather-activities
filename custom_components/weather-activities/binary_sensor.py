@@ -247,7 +247,6 @@ class WeatherActivitiesActivitySensor(WeatherActivitiesSensor):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, coordinator: WeatherActivitiesDataCoordinator, device_info: DeviceInfo) -> None:
         """Initialize the binary sensor."""
         super().__init__(hass=hass, entry=entry, coordinator=coordinator, device_info=device_info)
-        self._attr_days_count = None
 
     def _generate_name(self) -> str:
         """Generate a name for this entity"""
