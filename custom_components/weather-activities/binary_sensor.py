@@ -1,5 +1,6 @@
 """Binary sensors for weather-activities."""
 
+import datetime as dt
 import logging
 import re
 
