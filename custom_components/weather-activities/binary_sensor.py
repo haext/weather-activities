@@ -40,7 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     
     coordinator: WeatherActivitiesDataCoordinator = hass.data[DOMAIN][entry.entry_id].coordinator
     
-    async_add_entities([WeatherActivitiesSensor(entry=entry, coordinator=coordinator, day=day) for day in range(0,forecast_days)])
+    async_add_entities([WeatherActivitiesSensor(entry=entry, coordinator=coordinator, day=day) for day in range(0,forecast_days+1)])
 
 class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     """Implementation of binary sensor."""
