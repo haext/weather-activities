@@ -155,6 +155,22 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         """Get the icon, based on the current state."""
         return ICON_ON if self.is_on else ICON_OFF
     
+    def match_forecast_time(self, forecast, time_start: dt.time | None, time_end: dt.time | None):
+        time: dt.time = hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)).time()
+        if (time_start is not None) and (time < time_start):
+            return False
+        if (time_end is not None) and (time >= time_end):
+            return False
+        return True
+    
+    def match_forecast_datetime(self, forecast, time_start: dt.datetime | None, time_end: dt.datetime | None):
+        time: dt.datetime = hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME))
+        if (time_start is not None) and (time < time_start):
+            return False
+        if (time_end is not None) and (time >= time_end):
+            return False
+        return True
+    
     def filter_forecasts_by_activity(self, forecasts: list) -> list:
         """Filter forecasts down to those valid for this activity."""
         temp_min = self._entry.data.get(CONFID_TEMP_MIN)
@@ -165,7 +181,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             for forecast in forecasts
             if (((temp_max is None) or (forecast.get(ATTR_FORECAST_TEMP) < temp_max)) and ((temp_min is None) or (forecast.get(ATTR_FORECAST_TEMP) >= temp_min)))
         ]
-        LOGGER.debug("Found forecasts in temp range: %s", filtered_temp)
+        LOGGER.debug("Found forecasts in temp range:\n\t%s", "\n\t".join(map(str, filtered_temp)))
         
         time_start = hadt.parse_time(self._entry.data.get(CONFID_TIME_START))
         time_end = hadt.parse_time(self._entry.data.get(CONFID_TIME_END))
@@ -173,9 +189,9 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         filtered_time = [
             forecast
             for forecast in filtered_temp
-            if (((time_start is None) or (hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)).time() >= time_start)) and ((time_end is None) or (hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)).time() < time_end)))
+            if self.match_forecast_time(forecast, time_start, time_end)
         ]
-        LOGGER.debug("Found forecasts in time range: %s", filtered_time)
+        LOGGER.debug("Found forecasts in time range:\n\t%s", "\n\t".join(map(str, filtered_time)))
         
         dow = None # self._entry.data.get(CONFID_DOW)
         isday_valid = self._entry.data.get(CONFID_ISDAY_VALID, False)
@@ -186,7 +202,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             for forecast in filtered_time
             if (not isday_valid) or (isday == forecast.get("is_daytime", None))
         ]
-        LOGGER.debug("Found forecasts with isday: %s", filtered_dd)
+        LOGGER.debug("Found forecasts with isday:\n\t%s", "\n\t".join(map(str, filtered_dd)))
         
         hrs_min = self._entry.data.get(CONFID_HRS_MIN)
         if (hrs_min is not None) and len(filtered_dd) < hrs_min:
@@ -216,13 +232,13 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
         return (hadt.now() + dt.timedelta(hours=24 * self._day)).strftime("%Y-%m-%d %A") + " (+" + str(self._day) + "d)"
     
     def _load_from_forecasts(self, forecasts: list) -> None:
-        filtered_time = self.filter_forecasts_by_time(forecasts)
-        LOGGER.debug("Found forecasts in time range: %s", filtered_time)
-        if (len(filtered_time) < 24) and (self._day > 0):
+        filtered_day = self.filter_forecasts_by_day(forecasts)
+        LOGGER.debug("Found forecasts in day:\n\t%s", "\n\t".join(map(str, filtered_day)))
+        if (len(filtered_day) < 24) and (self._day > 0):
             LOGGER.debug("Found too few forecasts")
             self._set_unavailable()
         else:
-            filtered_activity = self.filter_forecasts_by_activity(filtered_time)
+            filtered_activity = self.filter_forecasts_by_activity(filtered_day)
             self._attr_on = len(filtered_activity) > 0
             self._attr_extra_state_attributes = {
                 ATTR_HRS_COUNT: len(filtered_activity),
@@ -230,15 +246,26 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
                 ATTR_TEMP_MAX: max(filtered_activity, key=lambda f: f.get(ATTR_FORECAST_TEMP)).get(ATTR_FORECAST_TEMP) if self._attr_on else None,
             }
     
-    def filter_forecasts_by_time(self, forecasts: list) -> list:
+    def filter_forecasts_by_day(self, forecasts: list) -> list:
         """Filter forecasts down to those valid for this sensor."""
+        time_start = hadt.parse_time(self._entry.data.get(CONFID_TIME_START))
+        time_end = hadt.parse_time(self._entry.data.get(CONFID_TIME_END))
+        if time_start is not None:
+            day_start_time = time_start
+        elif time_end if not None:
+            day_start_time = time_end
+        else
+            day_start_time = hadt.parse_time("00:00:00")
+        
         now = hadt.now()
-        time_start = hadt.start_of_local_day(now + dt.timedelta(hours=24 * self._day))
-        time_end = hadt.start_of_local_day(now + dt.timedelta(hours=24 * (self._day + 1)))
+        day_start_datetime = dt.combine(now.date(), day_start_time, now.tzinfo)
+        
+        time_start = day_start_datetime + dt.timedelta(hours=24 * self._day)
+        time_end = day_start_datetime + dt.timedelta(hours=24 * (self._day + 1))
         return [
             forecast
             for forecast in forecasts
-            if (((time_forecast := hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME))) < time_end) and (time_forecast >= time_start))
+            if self.match_forecast_datetime(forecast, time_start, time_end)
         ]
 
 class WeatherActivitiesActivitySensor(WeatherActivitiesSensor):
@@ -258,7 +285,7 @@ class WeatherActivitiesActivitySensor(WeatherActivitiesSensor):
         return DOMAIN + " activity",
     
     def _load_from_forecasts(self, forecasts: list) -> None:
-        LOGGER.debug("Found forecasts: %s", forecasts)
+        LOGGER.debug("Found forecasts:\n\t%s", "\n\t".join(map(str, forecasts)))
         filtered_activity = self.filter_forecasts_by_activity(forecasts)
         self._attr_on = len(filtered_activity) > 0
         self._attr_extra_state_attributes = {
