@@ -280,7 +280,7 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
                 if hours_start is None:
                     hours_start = hours_current
                     hours_prev = hours_current
-                elif hours_current == hours_prev + dt.timedelta(hours=1):
+                elif (hours_prev is not None) and (hours_current == hours_prev + dt.timedelta(hours=1)):
                     hours_prev = hours_current
                 else:
                     explanation = self.explain_mismatch(next((forecast for forecast in filtered_activity if hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)) == hours_prev + dt.timedelta(hours=1)), None))
