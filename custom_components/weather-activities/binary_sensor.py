@@ -213,7 +213,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     
     def explain_mismatch(self, forecast, check_time_start: bool = False, check_time_end: bool = True) -> str:
         if forecast is None:
-            return "no future forecast found"
+            return " (end of forecasts)"
         
         explanations = []
         temp_min = self._entry.data.get(CONFID_TEMP_MIN)
@@ -228,9 +228,9 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         time_end = hadt.parse_time(self._entry.data.get(CONFID_TIME_END)) if check_time_end else None
         time: dt.time = hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)).time()
         if (time_start is not None) and (time < time_start):
-            explanations.append(f"time {time}<{time_start}")
+            explanations.append("time " + time.strftime("%H:%M") + "<" + time_start.strftime("%H:%M"))
         if (time_end is not None) and (time >= time_end):
-            explanations.append(f"time {time}>={time_end}")
+            explanations.append("time " + time.strftime("%H:%M") + ">=" + time_end.strftime("%H:%M"))
         
         dow = None # self._entry.data.get(CONFID_DOW)
         isday_valid = self._entry.data.get(CONFID_ISDAY_VALID, False)
@@ -239,7 +239,9 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
         if isday_valid and (isday != isday_actual):
             explanations.append(f"isday {isday}!={isday_actual}")
         
-        return ", ".join(explanations)
+        if len(explanations) < 1:
+            return ""
+        return " because " + (", ".join(explanations))
 
 class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
     """Implementation of binary sensor for per-day."""
@@ -287,12 +289,12 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
                     hours_prev = hours_current
                 else:
                     explanation = self.explain_mismatch(next((forecast for forecast in forecasts if hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)) == hours_prev + dt.timedelta(hours=1)), None))
-                    hours_ranges.append(hours_start.strftime("%H:%M") + " to " + (hours_prev + dt.timedelta(minutes=59)).strftime("%H:%M") + " because " + explanation)
+                    hours_ranges.append(hours_start.strftime("%H:%M") + " to " + (hours_prev + dt.timedelta(minutes=59)).strftime("%H:%M") + explanation)
                     hours_start = hours_current
                     hours_prev = hours_current
             if hours_start is not None:
                 explanation = self.explain_mismatch(next((forecast for forecast in forecasts if hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)) == hours_prev + dt.timedelta(hours=1)), None))
-                hours_ranges.append(hours_start.strftime("%H:%M") + " to " + (hours_prev + dt.timedelta(minutes=59)).strftime("%H:%M") + " because " + explanation)
+                hours_ranges.append(hours_start.strftime("%H:%M") + " to " + (hours_prev + dt.timedelta(minutes=59)).strftime("%H:%M") + explanation)
             
             self._attr_extra_state_attributes = {
                 ATTR_HRS_COUNT: len(filtered_activity),
