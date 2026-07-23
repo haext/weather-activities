@@ -62,7 +62,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             translation_key=DOMAIN + " perday",
         )
 
-        self._attr_on = None
+        self._load_from_coordinator()
         self._attr_unique_id = f"{self._entry.entry_id}_{self._key}"
 
         LOGGER.debug("Initialized binary sensor %s entry data: %s", self._name, self._entry.data)
@@ -83,10 +83,9 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             },
         )
 
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Update binary sensor with latest data from coordinator."""
+    def _load_from_coordinator(self) -> None:
         if not self.coordinator.data.valid:
+            LOGGER.debug("No valid coordinator data")
             self._attr_on = None
         else:
             forecasts = self.coordinator.data.forecasts
@@ -103,6 +102,11 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             ]
             LOGGER.debug("Found forecasts in temp range: %2", filtered_temp)
             self._attr_on = len(filtered_temp) > 0
+    
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Update binary sensor with latest data from coordinator."""
+        self._load_from_coordinator()
         self.async_write_ha_state()
 
     def filter_forecasts(self, forecasts: list) -> list:
