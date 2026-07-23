@@ -254,7 +254,7 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
             day_start_time = time_start
         elif time_end is not None:
             day_start_time = time_end
-        else
+        else:
             day_start_time = hadt.parse_time("00:00:00")
         
         now = hadt.now()
