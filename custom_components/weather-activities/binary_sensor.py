@@ -15,6 +15,7 @@ from homeassistant.components.weather import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as hadt
@@ -40,25 +41,42 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     LOGGER.debug("Creating per-day sensors for %d days", forecast_days)
     
     coordinator: WeatherActivitiesDataCoordinator = hass.data[DOMAIN][entry.entry_id].coordinator
+    activity_name: str = entry.data.get(CONFID_NAME)
+    device_info: DeviceInfo = DeviceInfo(
+          name=f"WeatherActivity {activity_name}",
+          manufacturer="HAExt",
+          model="WeatherActivity",
+          sw_version="1.0",
+          identifiers={
+              (
+                  DOMAIN,
+                  f"{activity_name}",
+              )
+          },
+      )
     
-    async_add_entities([WeatherActivitiesSensor(entry=entry, coordinator=coordinator, day=day) for day in range(0,forecast_days+1)])
+    async_add_entities([WeatherActivitiesSensor(hass=hass, entry=entry, coordinator=coordinator, device_info=device_info, day=day) for day in range(0,forecast_days+1)])
 
 class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     """Implementation of binary sensor."""
 
-    def __init__(self, entry: ConfigEntry, coordinator: WeatherActivitiesDataCoordinator, day: int) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, coordinator: WeatherActivitiesDataCoordinator, device_info: DeviceInfo, day: int) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator)
         
+        self._attr_has_entity_name = True
+        
         self._entry = entry
+        self._device_info = device_info
         self._day = day
         
-        self._name = self._entry.data.get(CONFID_NAME) + " Day " + str(self._day)
+        self._activity_name = self._entry.data.get(CONFID_NAME)
+        self._name = self._activity_name + " Day " + str(self._day)
         self._key = re.sub(r'[-\s]+', '_', self._name).lower()
         
+        self.entity_id = generate_entity_id("binary_sensor.{}", DOMAIN + "_" + self._key, hass=hass)
         self.entity_description = BinarySensorEntityDescription(
             key=self._key,
-            name=self._name,
             icon=ICON_OFF,
             translation_key=DOMAIN + " perday",
         )
@@ -71,18 +89,17 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Get the device information."""
-        return DeviceInfo(
-            name=f"WeatherActivityPerDay {self._name}",
-            manufacturer="HAExt",
-            model="PerDay",
-            sw_version="1.0",
-            identifiers={
-                (
-                    DOMAIN,
-                    f"{self._key}",
-                )
-            },
-        )
+        return self._device_info
+
+    @property
+    def unique_id(self) -> str:
+        """Get the unique id."""
+        return f"{DOMAIN}-{self._key}"
+
+    @property
+    def name(self) -> str:
+        """Get the entity name."""
+        return (hadt.now() + dt.timedelta(hours=24 * self._day)).strftime("%A") + " (+" + str(self._day) + "d)"
 
     def _load_from_coordinator(self) -> None:
         if not self.coordinator.data.valid:
