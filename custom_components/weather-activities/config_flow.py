@@ -46,7 +46,7 @@ async def create_schema(hass: HomeAssistant) -> vol.Schema:
     weather_entity = weather_entities[0] if weather_entities else None
     
     dow_regex = "^[MTWRFSU]+$"
-    time_regex = "^(?:[01]\d|2[0-3]):[0-5]\d$"
+    time_regex = "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
     
     return vol.Schema(
         {
@@ -65,9 +65,9 @@ async def create_schema(hass: HomeAssistant) -> vol.Schema:
             vol.Optional(CONFID_TEMP_MIN, default=CONFDF_TEMP_MIN): vol.Maybe(vol.Coerce(float)),
             vol.Optional(CONFID_TEMP_MAX, default=CONFDF_TEMP_MAX): vol.Maybe(vol.Coerce(float)),
             vol.Optional(CONFID_TIME_START, default=CONFDF_TIME_START): cv.matches_regex(time_regex),
-            vol.Optional(CONFID_TIME_END, default=CONFDF_TIME_END): cv.matches_regex(time_regex),,
+            vol.Optional(CONFID_TIME_END, default=CONFDF_TIME_END): cv.matches_regex(time_regex),
             vol.Optional(CONFID_ISDAY, default=CONFDF_ISDAY): vol.Maybe(vol.Coerce(bool)),
-            # vol.Optional(CONFID_DOW, default=CONFDF_DOW): cv.matches_regex(dow_regex),,
+            # vol.Optional(CONFID_DOW, default=CONFDF_DOW): cv.matches_regex(dow_regex),
             vol.Optional(CONFID_HRS_MIN, default=CONFDF_HRS_MIN): vol.Maybe(vol.Coerce(int)),
         },
     )
