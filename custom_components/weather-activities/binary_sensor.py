@@ -211,7 +211,7 @@ class WeatherActivitiesSensor(CoordinatorEntity, BinarySensorEntity):
             return []
         return filtered_dd
     
-    def explain_mismatch(self, , check_time_start: bool = False, check_time_end: bool = False) -> str:
+    def explain_mismatch(self, forecast, check_time_start: bool = False, check_time_end: bool = True) -> str:
         if forecast is None:
             return "no future forecast found"
         
@@ -287,12 +287,12 @@ class WeatherActivitiesDaySensor(WeatherActivitiesSensor):
                     hours_prev = hours_current
                 else:
                     explanation = self.explain_mismatch(next((forecast for forecast in forecasts if hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)) == hours_prev + dt.timedelta(hours=1)), None))
-                    hours_ranges.append(hours_start.strftime("%H:%M") + " to " + (hours_prev + timedelta(minutes=59)).strftime("%H:%M") + " because " + explanation)
+                    hours_ranges.append(hours_start.strftime("%H:%M") + " to " + (hours_prev + dt.timedelta(minutes=59)).strftime("%H:%M") + " because " + explanation)
                     hours_start = hours_current
                     hours_prev = hours_current
             if hours_start is not None:
                 explanation = self.explain_mismatch(next((forecast for forecast in forecasts if hadt.parse_datetime(forecast.get(ATTR_FORECAST_TIME)) == hours_prev + dt.timedelta(hours=1)), None))
-                hours_ranges.append(hours_start.strftime("%H:%M") + " to " + (hours_prev + timedelta(minutes=59)).strftime("%H:%M") + " because " + explanation)
+                hours_ranges.append(hours_start.strftime("%H:%M") + " to " + (hours_prev + dt.timedelta(minutes=59)).strftime("%H:%M") + " because " + explanation)
             
             self._attr_extra_state_attributes = {
                 ATTR_HRS_COUNT: len(filtered_activity),
