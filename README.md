@@ -49,7 +49,40 @@ For each activity you can configure:
 ## UI
 
 By combining the [auto-entities](https://github.com/thomasloven/lovelace-auto-entities) and [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row), it is possible to create a GUI list of all the days when an activity is forecast to be possible.
-The below example creates a "MyActivity" card which displays exactly this, assuming an activity "MyActivity" has already been configured.
+
+First, create `weather_activities.jinja` as a [custom jinja template](https://www.home-assistant.io/docs/templating/custom-templates/) with the following contents:
+
+```
+{%- macro weather_activities_entities(primary_entity) -%}
+  {%- set entities = device_entities(device_id(primary_entity)) -%}
+  {%- set ns = namespace(dicts=[]) -%}
+  
+  {%- for entity in entities -%}
+    {%- if entity | regex_match('.*\d+') -%}
+      {%- set ns.dicts = ns.dicts + [ {'entity': entity, 'index': entity | regex_replace('.*_(\d+)', '\\1') | int} ] -%}
+    {%- else -%}
+      {%- set ns.dicts = ns.dicts + [ {'entity': entity, 'index': -1} ] -%}
+    {%- endif -%}
+  {%- endfor -%}
+  
+  [{%- for e in ns.dicts | sort(attribute='index') | map(attribute='entity') | list -%}
+    {%- if is_state(e, 'on') -%} {
+      'type': 'custom:multiple-entity-row',
+      'entity': '{{ e }}',
+      'name': '{{ entity_name(e) }}',
+      {%- if loop.index0 > 0 -%}
+        'attribute': 'hrs_count',
+        'secondary_info': {
+          'attribute': 'hrs_ranges'
+        },
+        'entities': []
+      {%- endif -%}
+    },{%- endif -%}
+  {%- endfor -%}]
+{%- endmacro -%}
+```
+
+Based on the above macro, the below example creates a "MyActivity" card which displays exactly this, assuming an activity "MyActivity" has already been configured.
 
 ```yaml
 type: custom:auto-entities
@@ -59,18 +92,8 @@ card:
   state_color: true
 filter:
   template: >-
-    [{%- for e in
-    device_entities(device_id("binary_sensor.weather_activities_myactivity")) -%}
-      {%- if is_state(e, 'on') -%} {
-        'type': 'custom:multiple-entity-row',
-        'entity': '{{ e }}',
-        'name': '{{ entity_name(e) }}',
-        {%- if loop.index0 > 0 -%}
-          'attribute': 'hrs_count',
-          'entities': []
-        {%- endif -%}
-      },{%- endif -%}
-    {%- endfor -%}]
+    {%- from 'weather_activities.jinja' import weather_activities_entities -%}
+    {{ weather_activities_entities("binary_sensor.weather_activities_myactivity") }}
 ```
 
 # Related
